@@ -6,6 +6,70 @@
 #include <math.h>
 #include <string.h>
 
+#include "hilbert.c"
+
+void createHilbert(int size, int scale){
+int q,p,level=log2(size/scale)+1,psize=size*size;
+int count=hilbert_points_at_level(level);
+int cx,cy,nx,ny;
+uint8_t *pixels=malloc(psize);
+memset(pixels,0,psize);
+for(q=0;q<count;q++){
+hilbert(q,level,&nx,&ny);
+nx*=scale;
+ny*=scale;
+if(q==0){
+cx=nx;cy=ny;
+}
+do{
+p=cx+cy*size;
+if(p>=0 && p<psize && cx<size){
+pixels[p]=255;
+}
+if(cx<nx){cx++;}
+if(cx>nx){cx--;}
+if(cy<ny){cy++;}
+if(cy>ny){cy--;}
+}while(cx!=nx || cy!=ny);
+
+}
+fwrite(pixels,1,size*size,stdout);
+free(pixels);
+}
+
+
+void createBinarySun(int size, int is_skew_checker, int mindist){
+uint8_t *pixels=malloc(size*size);
+int q,w,p;
+int center=size>>1;
+int distances=size<<3;
+int *dist2count=malloc(sizeof(int)*distances);
+int curpow=0;
+for(q=0;q<distances;q++){
+if((q>>(curpow))>0){curpow++;}
+dist2count[q]=1<<(curpow);
+}
+for(w=0;w<size;w++){
+for(q=0;q<size;q++){
+p=q+w*size;
+double angle=atan2(center-w,center-q);
+if(angle<0){angle=2.0*M_PI+angle;}
+double dist=sqrt(pow(center-q,2)+pow(center-w,2));
+double circlen=2.0*M_PI*dist-.5;
+int sides=dist2count[(int)(circlen)]>>1;
+int sides_eq=1<<(int)(dist/(double)mindist);
+if(sides_eq<sides){
+sides=sides_eq;
+}
+int pos=((int)(angle/2.0/M_PI*sides+(is_skew_checker?log2(sides):0)));
+pixels[p]=pos&1?255:0;
+}
+}
+fwrite(pixels,1,size*size,stdout);
+free(pixels);
+free(dist2count);
+}
+
 void createCircleGrid(int size, int count, int width, int radius, int is_checker){
 uint8_t *pixels=malloc(size*size);
 int q,w,p;
@@ -40,6 +104,7 @@ pixels[p]=lum;
 fwrite(pixels,1,size*size,stdout);
 free(pixels);
 }
+
 
 
 void createGrid(int size, int count){
@@ -116,6 +181,28 @@ free(pixels);
 }
 
 
+void createGradient(int size){
+uint32_t *pixels=malloc(size*size*4);
+int q,w,qi,wi,p;
+double qf,wf;
+int red,green,blue;
+for(w=0;w<size;w++){
+for(q=0;q<size;q++){
+qf=(double)q/size;
+wf=(double)w/size;
+qi=0.5+qf*256.0;
+wi=0.5+wf*256.0;
+p=q+w*size;
+red=255-wi;
+green=qi;
+blue=wi;
+pixels[p]=0xFF000000 | blue | (green<<8) | (red<<16);
+}
+}
+fwrite(pixels,4,size*size,stdout);
+free(pixels);
+}
+
 
 int main(int argc, char **argv){
 
@@ -134,6 +221,18 @@ createGrid(twidth, atoi(argv[3]));
 }
 if(strstr(op,"circle")){
 createCircleGrid(twidth,atoi(argv[3]),atoi(argv[4]),atoi(argv[5]),atoi(argv[6]));
+}
+
+if(strstr(op,"gradient")){
+createGradient(twidth);
+}
+
+if(strstr(op,"binarysun")){
+createBinarySun(twidth,atoi(argv[3]),atoi(argv[4]));
+}
+
+if(strstr(op,"hilbert")){
+createHilbert(twidth,atoi(argv[3]));
 }
 
 return EXIT_SUCCESS;

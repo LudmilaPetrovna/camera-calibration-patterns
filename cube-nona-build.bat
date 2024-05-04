@@ -1,0 +1,1 @@
+"T:\Program Files\Hugin\bin\nona" -o cube cube.pto
