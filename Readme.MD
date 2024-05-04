@@ -7,13 +7,13 @@ Drawing such pictures in a graphics editor is also not an option - it's easy to 
 This repository contains test image generators that can:
 
 * Draw Hilbert curve
-* Draw a checkerboard
-* Draw meshes
+* Draw a different checkerboards
+* Draw grids
 * Circles
 * XOR pattern (in color)
 * Color gradient
 * Radial stripes (binary sun)
-* Number grid (can be used to overlay other patterns)
+* Numbers grid (can be used to overlay other patterns)
 
 The list is not large, and does not pretend to be complete of all possible tests; here is basically what I needed.
 
