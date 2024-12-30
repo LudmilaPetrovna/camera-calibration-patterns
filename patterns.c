@@ -7,6 +7,79 @@
 #include <string.h>
 
 #include "hilbert.c"
+#include "font.c"
+#include "crc32.c"
+
+
+void draw_string_rgba(uint32_t *pixels, int width, int height, char *msg, int ox, int oy, uint32_t color){
+int q,ch,tpos_x,tpos_y,px,py,a,s,len=strlen(msg);
+int sx,sy,sbit,sbyte;
+for(q=0;q<len;q++){
+ch=(uint32_t)msg[q];
+tpos_x=ch%16;
+tpos_y=ch/16;
+
+for(s=0;s<font_height;s++){
+for(a=0;a<font_width;a++){
+px=a+ox;
+py=s+oy;
+sx=tpos_x*font_width+a;
+sy=tpos_y*font_height+s;
+sbyte=(sx>>3)+sy*font_stride;
+sbit=sx&7;
+if(px>=0 && py>=0 && px<width && py<height && ((font_bits[sbyte]>>sbit)&1)==1){
+pixels[px+py*width]=color;
+}
+}
+}
+ox+=font_width;
+}
+}
+
+void draw_string_glow_rgba(uint32_t *pixels, int width, int height, char *msg, int ox, int oy){
+int q,w;
+for(w=-1;w<=1;w++){
+for(q=-1;q<=1;q++){
+draw_string_rgba(pixels, width, height, msg, ox+q, oy+w, 0xFF000000);
+}
+}
+draw_string_rgba(pixels, width, height, msg, ox, oy, 0xFFFFFFFF);
+}
+
+void createSignatureOverlay(int width, int height, char *text){
+uint32_t *pixels=malloc(width*height*4);
+uint32_t colors[4];
+uint32_t sum=calculate_crc32c(0,text,strlen(text));
+static char info[256];
+sprintf(info,"0x%08x (%dx%d)",sum,width,height);
+char *signs[2]={text,info};
+int q,w,cc;
+
+// define colors;
+for(q=0;q<4;q++){
+cc=(sum>>(q*6));
+colors[q]=((cc&3)<<6)|(((cc>>2)&3)<<14)|(((cc>>4)&3)<<22);
+colors[q]|=0x7f000000;
+}
+
+for(w=0;w<height;w++){
+for(q=0;q<width;q++){
+cc=((q>>3)^(w>>3))&3;
+pixels[q+w*width]=colors[cc];
+}
+}
+
+srand(time(0));
+q=0;
+for(w=0;w<height;w+=15){
+draw_string_glow_rgba(pixels,width,height,signs[rand()&1],5+q*50,5+w);
+q^=1;
+}
+fwrite(pixels,1,width*height*4,stdout);
+
+free(pixels);
+}
+
 
 
 void createBayer(int size){
@@ -323,6 +396,9 @@ if(strstr(op,"bayer")){
 createBayer(twidth);
 }
 
+if(strstr(op,"signature")){
+createSignatureOverlay(twidth,atoi(argv[3]),argv[4]);
+}
 
 return EXIT_SUCCESS;
 }

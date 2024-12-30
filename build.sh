@@ -3,6 +3,9 @@
 rm patterns
 gcc patterns.c -ggdb3 -lm -o patterns || exit
 
+./patterns signature 256 512 "this is just a test" | ffmpeg -pix_fmt rgb32 -s 256x512 -f rawvideo -i - -y signature.png
+
+exit
 ./patterns bayer 2 | ffmpeg -pix_fmt gray -s 2x2 -f rawvideo -i - -y bayer2.png
 ./patterns bayer 4 | ffmpeg -pix_fmt gray -s 4x4 -f rawvideo -i - -y bayer4.png
 ./patterns bayer 8 | ffmpeg -pix_fmt gray -s 8x8 -f rawvideo -i - -y bayer8.png
