@@ -2,8 +2,12 @@
 
 rm patterns
 gcc patterns.c -ggdb3 -lm -o patterns || exit
-./patterns gradient4 512 | ffmpeg -pix_fmt gray -s 512x512 -f rawvideo -i - -y gradient4.png
 
+./patterns bayer 2 | ffmpeg -pix_fmt gray -s 2x2 -f rawvideo -i - -y bayer2.png
+./patterns bayer 4 | ffmpeg -pix_fmt gray -s 4x4 -f rawvideo -i - -y bayer4.png
+./patterns bayer 8 | ffmpeg -pix_fmt gray -s 8x8 -f rawvideo -i - -y bayer8.png
+
+./patterns gradient4 512 | ffmpeg -pix_fmt gray -s 512x512 -f rawvideo -i - -y gradient4.png
 ./patterns binarysun 256 0 20 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun.png
 ./patterns binarysun 256 0 15 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun2.png
 ./patterns binarysun 256 1 15 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun3.png

@@ -9,6 +9,47 @@
 #include "hilbert.c"
 
 
+void createBayer(int size){
+uint8_t bayer_base[]={0,3,1,2};
+uint8_t *pixels=malloc(size*size);
+pixels[0]=0;
+int not_done=size;
+int l,q,a,s,ox,oy,st;
+for(l=0;not_done;l++,not_done>>=1){
+st=powl(2,l-1);
+for(q=3;q>=0;q--){
+ox=bayer_base[q]&1;
+oy=(bayer_base[q]>>1)&1;
+for(s=0;s<st;s++){
+for(a=0;a<st;a++){
+pixels[a+ox*st+(s+oy*st)*size]=pixels[a+s*size]*4+q;
+}
+}
+}
+}
+
+// out to console
+int w;
+for(w=0;w<size;w++){
+fprintf(stderr,"{");
+for(q=0;q<size;q++){
+fprintf(stderr,"% 3d%s",pixels[q+w*size],q==size-1?"":", ");
+}
+fprintf(stderr,"},\n");
+}
+
+// multiple to 256
+int mult=256/(size*size);
+for(w=0;w<size;w++){
+for(q=0;q<size;q++){
+pixels[q+w*size]*=mult;
+}
+}
+fwrite(pixels,1,size*size,stdout);
+free(pixels);
+}
+
+
 void createGradient4(int size){
 uint8_t *pixels=malloc(size*size);
 int q,w,p,mode;
@@ -277,6 +318,11 @@ createBinarySun(twidth,atoi(argv[3]),atoi(argv[4]));
 if(strstr(op,"hilbert")){
 createHilbert(twidth,atoi(argv[3]));
 }
+
+if(strstr(op,"bayer")){
+createBayer(twidth);
+}
+
 
 return EXIT_SUCCESS;
 }
