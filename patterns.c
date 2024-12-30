@@ -8,6 +8,45 @@
 
 #include "hilbert.c"
 
+
+void createGradient4(int size){
+uint8_t *pixels=malloc(size*size);
+int q,w,p,mode;
+int side=size>>1;
+double dx,dy,dl;
+for(mode=0;mode<4;mode++){
+for(w=0;w<side;w++){
+for(q=0;q<side;q++){
+p=(q+(mode&1)*side)+(w+((mode>>1)&1)*side)*size;
+
+if(mode==0){//radial
+dx=side-q;
+dy=side-w;
+dl=sqrt(dx*dx+dy*dy);
+pixels[p]=(uint8_t)dl;
+}
+
+if(mode==1){//horizontal
+pixels[p]=side-1-w;
+}
+
+if(mode==2){//vertical
+pixels[p]=side-1-q;
+}
+
+if(mode==3){//diagonal
+pixels[p]=q<w?q:w;
+}
+
+}
+}
+}
+fwrite(pixels,1,size*size,stdout);
+free(pixels);
+}
+
+
+
 void createHilbert(int size, int scale){
 int q,p,level=log2(size/scale)+1,psize=size*size;
 int count=hilbert_points_at_level(level);
@@ -223,8 +262,12 @@ if(strstr(op,"circle")){
 createCircleGrid(twidth,atoi(argv[3]),atoi(argv[4]),atoi(argv[5]),atoi(argv[6]));
 }
 
-if(strstr(op,"gradient")){
+if(strstr(op,"gradient1")){
 createGradient(twidth);
+}
+
+if(strstr(op,"gradient4")){
+createGradient4(twidth);
 }
 
 if(strstr(op,"binarysun")){

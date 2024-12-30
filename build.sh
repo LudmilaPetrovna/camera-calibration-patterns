@@ -1,6 +1,9 @@
 #!/bin/bash
 
-gcc patterns.c -lm -o patterns
+rm patterns
+gcc patterns.c -ggdb3 -lm -o patterns || exit
+./patterns gradient4 512 | ffmpeg -pix_fmt gray -s 512x512 -f rawvideo -i - -y gradient4.png
+
 ./patterns binarysun 256 0 20 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun.png
 ./patterns binarysun 256 0 15 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun2.png
 ./patterns binarysun 256 1 15 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y sun3.png
@@ -12,7 +15,7 @@ gcc patterns.c -lm -o patterns
 ./patterns checker 256 16 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -pix_fmt rgb32 -y checker-8.png
 ./patterns checker 256 32 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -pix_fmt rgb32 -y checker-16.png
 
-./patterns gradient 256 | ffmpeg -pix_fmt rgb32 -s 256x256 -f rawvideo -i - -y gradient.png
+./patterns gradient1 256 | ffmpeg -pix_fmt rgb32 -s 256x256 -f rawvideo -i - -y gradient.png
 
 ./patterns circle 256 8 1 0 1 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y circle-narrow.png
 ./patterns circle 256 1 10 0 0 | ffmpeg -pix_fmt gray -s 256x256 -f rawvideo -i - -y circle-target.png
