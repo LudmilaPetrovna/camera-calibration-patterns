@@ -40,7 +40,7 @@ void draw_string_glow_rgba(uint32_t *pixels, int width, int height, char *msg, i
 int q,w;
 for(w=-1;w<=1;w++){
 for(q=-1;q<=1;q++){
-draw_string_rgba(pixels, width, height, msg, ox+q, oy+w, 0xFF000000);
+draw_string_rgba(pixels, width, height, msg, ox+q, oy+w, 0x80000000);
 }
 }
 draw_string_rgba(pixels, width, height, msg, ox, oy, 0xFFFFFFFF);
@@ -59,7 +59,7 @@ int q,w,cc;
 for(q=0;q<4;q++){
 cc=(sum>>(q*6));
 colors[q]=((cc&3)<<6)|(((cc>>2)&3)<<14)|(((cc>>4)&3)<<22);
-colors[q]|=0x7f000000;
+colors[q]|=0x3f000000;
 }
 
 for(w=0;w<height;w++){
