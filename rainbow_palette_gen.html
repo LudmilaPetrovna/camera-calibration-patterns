@@ -1,0 +1,88 @@
+<html><body>
+
+R: <input type=range id=R_freq style=width:300px oninput=update() value=1 min=1 max=250 step=.0001> <input type=range id=R_phase style=width:300px oninput=update() value=0 min=-3.5 max=3.5 step=.0001><br>
+G: <input type=range id=G_freq style=width:300px oninput=update() value=1 min=1 max=250 step=.0001> <input type=range id=G_phase style=width:300px oninput=update() value=0 min=-3.5 max=3.5 step=.0001><br>
+B: <input type=range id=B_freq style=width:300px oninput=update() value=1 min=1 max=250 step=.0001> <input type=range id=B_phase style=width:300px oninput=update() value=0 min=-3.5 max=3.5 step=.0001><br>
+W: <input type=range id=W_freq style=width:300px oninput=update() value=1 min=1 max=250 step=.0001> <input type=range id=W_phase style=width:300px oninput=update() value=0 min=-3.5 max=3.5 step=.0001><br>
+Noise: <input type=range id=noise style=width:300px oninput=update() value=0 min=0 max=255 step=.0001><br>
+Similarity: <input type=range id=similar style=width:300px oninput=update() value=0 min=-5 max=255 step=.0001><br>
+Randomize: <input type=checkbox id=randomize oninput=update()><br>
+
+<div id=out></div>
+
+
+<script>
+
+function update(){
+var inps=document.getElementsByTagName("input");
+var opts={};
+var q;
+for(q=0;q<inps.length;q++){
+var inp=inps[q]
+opts[inp.id]=(inp.type=="checkbox"?(inp.checked?1:0):inp.value)*1;
+}
+
+var out=JSON.stringify(opts);
+
+colors=[];
+similar=[];
+var h_noise=opts.noise/2;
+for(num=0;num<256;num++){
+
+R=Math.floor((Math.sin(num/opts.R_freq+opts.R_phase)/2.0+0.5)*255);
+G=Math.floor((Math.sin(num/opts.G_freq+opts.G_phase)/2.0+0.5)*255);
+B=Math.floor((Math.sin(num/opts.B_freq+opts.B_phase)/2.0+0.5)*255);
+W=Math.floor((Math.sin(num/opts.W_freq+opts.W_phase)/2.0)*25);
+N=Math.floor(Math.random()*opts.noise-h_noise);
+R+=W+N;
+G+=W+N;
+B+=W+N;
+if(R<0){R=0;}
+if(R>255){R=255;}
+if(G<0){G=0;}
+if(G>255){G=255;}
+if(B<0){B=0;}
+if(B>255){B=255;}
+
+colors[num]=[R,G,B,R+":"+G+":"+B];
+}
+
+
+if(opts.randomize){
+for(num=0;num<256;num++){
+ind=Math.floor(Math.random()*256);
+tmp=colors[ind];
+colors[ind]=colors[num];
+colors[num]=tmp;
+}
+}
+
+for(num=0;num<256;num++){
+like=0;
+for(q=0;q<256;q++){
+dist=Math.sqrt(Math.pow(colors[q][0]-colors[num][0],2)+Math.pow(colors[q][1]-colors[num][1],2)+Math.pow(colors[q][2]-colors[num][2],2));
+if(dist<opts.similar){like++;}
+}
+similar[num]=like;
+}
+
+for(w=0;w<16;w++){
+for(q=0;q<16;q++){
+num=q+w*16;
+
+R=colors[num][0];
+G=colors[num][1];
+B=colors[num][2];
+pos="position:absolute;left:"+(32*q)+"px;top:"+(w*32+250)+"px";
+
+out+="<div style="+pos+";width:32px;height:32px;background-color:rgb("+R+","+G+","+B+")>"+num+"<br>"+similar[num]+"</div>";
+}
+out+="<br>";
+}
+
+document.getElementById("out").innerHTML=out;
+}
+
+update();
+
+</script>
