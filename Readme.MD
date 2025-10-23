@@ -89,3 +89,5 @@ You can test software for stitching panoramas.
 ![numbers.png](./numbers.png)
 ![xor-numbered.png](./xor-numbered.png)
 ![xor.png](./xor.png)
+![alphatest-nodither-plasma.png](./alphatest-nodither-plasma.png)
+![alphatest-dither-dirt.png](./alphatest-dither-dirt.png)

@@ -1,9 +1,18 @@
 #!/bin/bash
 
+
+convert -size 512x512 -colorspace gray plasma:fractal -gamma 1.3 -normalize -level 5%,100% dirt.png
+
 rm patterns
 gcc patterns.c -ggdb3 -lm -o patterns || exit
 
-./patterns signature 256 512 "this is just a test" | ffmpeg -pix_fmt rgb32 -s 256x512 -f rawvideo -i - -y signature.png
+./patterns alphatest 512 512 16 0 | ffmpeg -pix_fmt rgb32 -s 512x512 -f rawvideo -i - -y alphatest-nodither-frames%01d.png
+convert -size 512x512 plasma:fractal -swirl 360 -normalize -compose copy-opacity alphatest-nodither-frames2.png -composite -compose src-over alphatest-nodither-frames1.png -composite alphatest-nodither-plasma.png
+convert dirt.png -compose copy-opacity alphatest-nodither-frames2.png -composite -compose src-over alphatest-nodither-frames1.png -composite alphatest-nodither-dirt.png
+./patterns alphatest 512 512 16 1 | ffmpeg -pix_fmt rgb32 -s 512x512 -f rawvideo -i - -y alphatest-dither-frames%01d.png
+convert -size 512x512 plasma:fractal -swirl 360 -normalize -compose copy-opacity alphatest-dither-frames2.png -composite -compose src-over alphatest-dither-frames1.png -composite alphatest-dither-plasma.png
+convert dirt.png -compose copy-opacity alphatest-dither-frames2.png -composite -compose src-over alphatest-dither-frames1.png -composite alphatest-dither-dirt.png
+#./patterns signature 256 512 "this is just a test" | ffmpeg -pix_fmt rgb32 -s 256x512 -f rawvideo -i - -y signature.png
 
 exit
 ./patterns bayer 2 | ffmpeg -pix_fmt gray -s 2x2 -f rawvideo -i - -y bayer2.png

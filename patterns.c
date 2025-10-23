@@ -10,7 +10,6 @@
 #include "font.c"
 #include "crc32.c"
 
-
 void draw_string_rgba(uint32_t *pixels, int width, int height, char *msg, int ox, int oy, uint32_t color){
 int q,ch,tpos_x,tpos_y,px,py,a,s,len=strlen(msg);
 int sx,sy,sbit,sbyte;
@@ -121,6 +120,107 @@ pixels[q+w*size]*=mult;
 fwrite(pixels,1,size*size,stdout);
 free(pixels);
 }
+
+
+void createAlphatest(int width, int height, int count, int is_dither){
+srand(time(0));
+uint32_t *pixels=malloc(width*height*4);
+int32_t *errors=malloc(width*height*4);
+uint8_t alpha_vals[256];
+struct{int x,y;} atkinson[]={
+{1,0},
+{2,0},
+{-1,1},
+{0,1},
+{1,1},
+{0,2}
+};
+
+char text[8];
+
+int q,w,e,p;
+int dx,dy,l;
+int ox,oy,a,s,m;
+int cell_w=width/count;
+int cell_h=width/count;
+
+// init alpha_vals
+for(q=0;q<256;q++){
+alpha_vals[q]=q;
+}
+// shuffle
+int t,n;
+for(q=0;q<256;q++){
+n=rand()%0xFF;
+t=alpha_vals[n];
+alpha_vals[n]=alpha_vals[q];
+alpha_vals[q]=t;
+}
+
+// draw grid and numbers
+for(w=0;w<count;w++){
+for(q=0;q<count;q++){
+
+for(s=0;s<cell_h;s++){
+for(a=0;a<cell_w;a++){
+p=q*cell_w+a+(w*cell_h+s)*width;
+l=0;
+if(a==0 || s==0 || a==(cell_w-1) || s==(cell_h-1)){
+l=255;
+}
+pixels[p]=(l<<24)|(0xFFFFFF);
+}
+}
+sprintf(text,"%3d",alpha_vals[q+w*count]);
+draw_string_glow_rgba(pixels,width,height,text,q*cell_w+cell_w/2-7,w*cell_h+cell_h/2-5);
+}
+}
+fwrite(pixels,4,width*height,stdout);
+
+
+// draw filler
+int cur,err;
+memset(errors,0,width*height*4);
+int csx,csy;
+int cex,cey;
+
+for(w=0;w<count;w++){
+for(q=0;q<count;q++){
+l=alpha_vals[q+w*count];
+csx=q*cell_w;
+csy=w*cell_h;
+cex=q*cell_w+cell_w;
+cey=w*cell_h+cell_h;
+
+for(s=0;s<cell_h;s++){
+for(a=0;a<cell_w;a++){
+p=q*cell_w+a+(w*cell_h+s)*width;
+cur=(l+errors[p]>127?255:0);
+err=(l+errors[p]-cur)/6;
+for(e=0;e<6;e++){
+ox=q*cell_w+a+atkinson[e].x;
+oy=w*cell_h+s+atkinson[e].y;
+if(//ox<0 || oy<0 || ox>=width || oy>=height || 
+ox>=cex || oy>=cey || ox<csx || oy<csy){continue;}
+errors[ox+oy*width]+=err;
+}
+if(is_dither){
+pixels[p]=cur|(cur<<8)|(cur<<16)|0xFF000000;
+pixels[p]=cur<<24;
+} else {
+pixels[p]=l<<24;
+}
+}
+}
+}
+}
+
+
+fwrite(pixels,4,width*height,stdout);
+free(pixels);
+free(errors);
+}
+
 
 
 void createGradient4(int size){
@@ -398,6 +498,10 @@ createBayer(twidth);
 
 if(strstr(op,"signature")){
 createSignatureOverlay(twidth,atoi(argv[3]),argv[4]);
+}
+
+if(strstr(op,"alphatest")){
+createAlphatest(twidth,atoi(argv[3]),atoi(argv[4]),atoi(argv[5]));
 }
 
 return EXIT_SUCCESS;
