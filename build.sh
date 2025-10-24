@@ -1,10 +1,22 @@
 #!/bin/bash
 
 
-convert -size 512x512 -colorspace gray plasma:fractal -gamma 1.3 -normalize -level 5%,100% dirt.png
+convert -size 256x256 -colorspace gray plasma:fractal -gamma 1.3 -normalize -level 5%,100% dirt-256.png
+convert -size 512x512 -colorspace gray plasma:fractal -gamma 1.3 -normalize -level 5%,100% dirt-512.png
 
 rm patterns
 gcc patterns.c -ggdb3 -lm -o patterns || exit
+
+
+./patterns alphatest 256 256 16 0 | ffmpeg -pix_fmt rgb32 -s 256x256 -f rawvideo -i - -y alphatest-nodither-frames%01d.png
+convert -size 256x256 plasma:fractal -swirl 360 -normalize -compose copy-opacity alphatest-nodither-frames2.png -composite -compose src-over alphatest-nodither-frames1.png -composite alphatest-nodither-plasma-256.png
+convert dirt-256.png -compose copy-opacity alphatest-nodither-frames2.png -composite -compose src-over alphatest-nodither-frames1.png -composite alphatest-nodither-dirt-256.png
+./patterns alphatest 256 256 16 1 | ffmpeg -pix_fmt rgb32 -s 256x256 -f rawvideo -i - -y alphatest-dither-frames%01d.png
+convert -size 256x256 plasma:fractal -swirl 360 -normalize -compose copy-opacity alphatest-dither-frames2.png -composite -compose src-over alphatest-dither-frames1.png -composite alphatest-dither-plasma-256.png
+convert dirt-256.png -compose copy-opacity alphatest-dither-frames2.png -composite -compose src-over alphatest-dither-frames1.png -composite alphatest-dither-dirt-256.png
+
+
+exit
 
 ./patterns alphatest 512 512 16 0 | ffmpeg -pix_fmt rgb32 -s 512x512 -f rawvideo -i - -y alphatest-nodither-frames%01d.png
 convert -size 512x512 plasma:fractal -swirl 360 -normalize -compose copy-opacity alphatest-nodither-frames2.png -composite -compose src-over alphatest-nodither-frames1.png -composite alphatest-nodither-plasma.png

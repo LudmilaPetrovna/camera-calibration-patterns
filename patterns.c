@@ -121,13 +121,20 @@ fwrite(pixels,1,size*size,stdout);
 free(pixels);
 }
 
+void drawFlatFiller(uint32_t *pixels, int width, int height, int x, int y, int fwidth, int fheight, int alpha){
+int q,w,p;
+for(w=0;w<fheight;w++){
+for(q=0;q<fwidth;q++){
+p=x+q+(y+w)*width;
+pixels[p]=alpha<<24;
+}
+}
 
-void createAlphatest(int width, int height, int count, int is_dither){
-srand(time(0));
-uint32_t *pixels=malloc(width*height*4);
-int32_t *errors=malloc(width*height*4);
-uint8_t alpha_vals[256];
-struct{int x,y;} atkinson[]={
+}
+
+
+void drawDitheredFiller(uint32_t *pixels, int width, int height, int x, int y, int fwidth, int fheight, int alpha){
+static struct{int x,y;} atkinson[]={
 {1,0},
 {2,0},
 {-1,1},
@@ -135,7 +142,48 @@ struct{int x,y;} atkinson[]={
 {1,1},
 {0,2}
 };
+int pre_width=fwidth*2+50;
+int pre_height=fheight*2+50;
+int32_t *errors=malloc(pre_width*pre_height*4);
+uint32_t *prepix=malloc(pre_width*pre_height*4);
 
+int q,w,e,p,cur,err,ox,oy;
+int tx=30+rand()%20;
+int ty=30+rand()%20;
+
+memset(errors,0,pre_width*pre_height*4);
+for(w=0;w<pre_height;w++){
+for(q=0;q<pre_width;q++){
+p=q+w*pre_width;
+cur=(alpha+errors[p]>127?255:0);
+err=(alpha+errors[p]-cur)/6;
+for(e=0;e<6;e++){
+ox=q+atkinson[e].x;
+oy=w+atkinson[e].y;
+if(ox<0 || oy<0 || ox>=pre_width || oy>=pre_height){continue;}
+errors[ox+oy*pre_width]+=err;
+}
+p=q+w*pre_width;
+prepix[p]=cur<<24;
+}
+}
+
+for(w=0;w<fheight;w++){
+for(q=0;q<fwidth;q++){
+pixels[x+q+(y+w)*width]=prepix[q*2+tx+(w*2+ty)*pre_width];
+}
+}
+
+free(prepix);
+free(errors);
+}
+
+
+
+void createAlphatest(int width, int height, int count, int is_dither){
+srand(time(0));
+uint32_t *pixels=malloc(width*height*4);
+uint8_t alpha_vals[256];
 char text[8];
 
 int q,w,e,p;
@@ -146,11 +194,12 @@ int cell_h=width/count;
 
 // init alpha_vals
 for(q=0;q<256;q++){
+alpha_vals[q]=100+(q*100000/255*155/100000);
 alpha_vals[q]=q;
 }
 // shuffle
 int t,n;
-for(q=0;q<256;q++){
+for(q=1110;q<256;q++){
 n=rand()%0xFF;
 t=alpha_vals[n];
 alpha_vals[n]=alpha_vals[q];
@@ -158,6 +207,7 @@ alpha_vals[q]=t;
 }
 
 // draw grid and numbers
+int prev_num=-1;
 for(w=0;w<count;w++){
 for(q=0;q<count;q++){
 
@@ -165,60 +215,39 @@ for(s=0;s<cell_h;s++){
 for(a=0;a<cell_w;a++){
 p=q*cell_w+a+(w*cell_h+s)*width;
 l=0;
-if(a==0 || s==0 || a==(cell_w-1) || s==(cell_h-1)){
-l=255;
+if((a+s)<=cell_h>>2 && (a==0 || s==0)){
+l=0xFFFFFFFF;
 }
-pixels[p]=(l<<24)|(0xFFFFFF);
+if((cell_w-1-a)<=cell_h>>2 && (cell_w-1-s)<=cell_h>>2 && (a==(cell_w-1) || s==(cell_h-1))){
+l=0xFF000000;
+}
+pixels[p]=l;
 }
 }
-sprintf(text,"%3d",alpha_vals[q+w*count]);
-draw_string_glow_rgba(pixels,width,height,text,q*cell_w+cell_w/2-7,w*cell_h+cell_h/2-5);
+if(prev_num!=alpha_vals[q+w*count]){
+sprintf(text,"%2X",alpha_vals[q+w*count]);
+draw_string_glow_rgba(pixels,width,height,text,q*cell_w+cell_w/2-5,w*cell_h+cell_h/2-4);
+prev_num=alpha_vals[q+w*count];
+}
 }
 }
 fwrite(pixels,4,width*height,stdout);
 
 
 // draw filler
-int cur,err;
-memset(errors,0,width*height*4);
-int csx,csy;
-int cex,cey;
 
 for(w=0;w<count;w++){
 for(q=0;q<count;q++){
-l=alpha_vals[q+w*count];
-csx=q*cell_w;
-csy=w*cell_h;
-cex=q*cell_w+cell_w;
-cey=w*cell_h+cell_h;
-
-for(s=0;s<cell_h;s++){
-for(a=0;a<cell_w;a++){
-p=q*cell_w+a+(w*cell_h+s)*width;
-cur=(l+errors[p]>127?255:0);
-err=(l+errors[p]-cur)/6;
-for(e=0;e<6;e++){
-ox=q*cell_w+a+atkinson[e].x;
-oy=w*cell_h+s+atkinson[e].y;
-if(//ox<0 || oy<0 || ox>=width || oy>=height || 
-ox>=cex || oy>=cey || ox<csx || oy<csy){continue;}
-errors[ox+oy*width]+=err;
-}
 if(is_dither){
-pixels[p]=cur|(cur<<8)|(cur<<16)|0xFF000000;
-pixels[p]=cur<<24;
+drawDitheredFiller(pixels,width,height,q*cell_w,w*cell_h,cell_w,cell_h,alpha_vals[q+w*count]);
 } else {
-pixels[p]=l<<24;
+drawFlatFiller(pixels,width,height,q*cell_w,w*cell_h,cell_w,cell_h,alpha_vals[q+w*count]);
 }
 }
 }
-}
-}
-
 
 fwrite(pixels,4,width*height,stdout);
 free(pixels);
-free(errors);
 }
 
 
