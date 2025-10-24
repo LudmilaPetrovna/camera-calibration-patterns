@@ -155,6 +155,14 @@ memset(errors,0,pre_width*pre_height*4);
 for(w=0;w<pre_height;w++){
 for(q=0;q<pre_width;q++){
 p=q+w*pre_width;
+errors[p]=rand()&1;
+}
+}
+
+
+for(w=0;w<pre_height;w++){
+for(q=0;q<pre_width;q++){
+p=q+w*pre_width;
 cur=(alpha+errors[p]>127?255:0);
 err=(alpha+errors[p]-cur)/6;
 for(e=0;e<6;e++){
